@@ -32,9 +32,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prb/foundry-template@workspace:.":
+"@nezz0746/lil-erc1155-drop@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@prb/foundry-template@workspace:."
+  resolution: "@nezz0746/lil-erc1155-drop@workspace:."
   dependencies:
     prettier: ^2.8.4
     rimraf: ^4.1.2

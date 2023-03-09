@@ -7,6 +7,6 @@ trailingComma: "all"
 useTabs: false
 
 overrides:
-  - files: ["*.sol"]
+  - files: ["*.sol", "*.s.sol"]
     options:
       tabWidth: 4
