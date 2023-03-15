@@ -45,18 +45,22 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
     bytes32 public constant DROP_CREATOR = keccak256("DROP_CREATOR");
 
+    address payable public treasury;
+
     /**
      * @dev Grants all roles to the admin account.
      * Feel free to distribute roles as you see fit.
      *
      * See {ERC1155}.
      */
-    constructor(address _admin) ERC1155("") {
+    constructor(address _admin, address payable _treasury) ERC1155("") {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         _setupRole(DROP_CREATOR, _admin);
         // Set the contract owner for opensea collection management
         // Note: Owner can add collaborators to the collection on opensea interface
         transferOwnership(_admin);
+
+        treasury = _treasury;
 
         _dropIds.increment();
     }
@@ -77,10 +81,7 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
         DropType dropType,
         string memory _dropUri,
         bytes memory _dropData
-    )
-        external
-        onlyRole(DROP_CREATOR)
-    {
+    ) external onlyRole(DROP_CREATOR) {
         uint256 dropId = _dropIds.current();
 
         drops[dropId].isLive = true;
@@ -166,11 +167,11 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
         ERC721GatedDropSettings memory dropSettings = abi.decode(dropData, (ERC721GatedDropSettings));
 
-        if (mintSettings.to != msg.sender) revert Errors.NotSender();
-
-        if (IERC721(dropSettings.tokenAddress).balanceOf(mintSettings.to) == 0) {
-            revert Errors.SenderDoesnNotOwnERC721();
+        if (msg.value < mintSettings.amount * dropSettings.price) {
+            revert Errors.IncorrectAmountSent();
         }
+
+        if (mintSettings.to != msg.sender) revert Errors.NotSender();
 
         if (totalSupply(dropId) + mintSettings.amount > dropSettings.maxSupply) {
             revert Errors.MaxSupplyReached();
@@ -180,11 +181,13 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
             revert Errors.MaxPerWalletReached();
         }
 
-        if (msg.value < mintSettings.amount * dropSettings.price) {
-            revert Errors.IncorrectAmountSent();
+        if (IERC721(dropSettings.tokenAddress).balanceOf(mintSettings.to) == 0) {
+            revert Errors.SenderDoesnNotOwnERC721();
         }
 
         _mint(mintSettings.to, dropId, mintSettings.amount, "");
+
+        treasury.transfer(msg.value);
     }
 
     /**
@@ -229,8 +232,8 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
         if (account != msg.sender) revert Errors.NotSender();
 
         if (
-            MerkleProof.verify(proof, dropSettings.listMerkleRoot, keccak256(abi.encodePacked(account, amount)))
-                == false
+            MerkleProof.verify(proof, dropSettings.listMerkleRoot, keccak256(abi.encodePacked(account, amount))) ==
+            false
         ) revert Errors.NotInAllowlist();
 
         if (dropsClaims[dropId][account]) revert Errors.AlreadyClaimed();
@@ -250,13 +253,7 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
         return drops[_id].dropUri;
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155, AccessControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
