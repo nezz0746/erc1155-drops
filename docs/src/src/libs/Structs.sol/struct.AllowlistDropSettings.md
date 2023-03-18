@@ -1,5 +1,5 @@
 # AllowlistDropSettings
-[Git Source](https://github.com/nezz0746/lil-erc1155-drop/blob/98e5a922cf56496b4de02d4782b187dd6d1c6131/src/libs/Structs.sol)
+[Git Source](https://github.com/nezz0746/erc1155-drops/blob/d7f880b61660eee2cfba35343e42e0de1e47c5a1/src/libs/Structs.sol)
 
 
 ```solidity

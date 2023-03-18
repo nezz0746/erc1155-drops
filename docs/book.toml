@@ -5,7 +5,7 @@ title = ''
 no-section-label = true
 additional-js = ['solidity.min.js']
 additional-css = ['book.css']
-git-repository-url = 'https://github.com/nezz0746/lil-erc1155-drop'
+git-repository-url = 'https://github.com/nezz0746/erc1155-drops'
 
 [output.html.fold]
 enable = true

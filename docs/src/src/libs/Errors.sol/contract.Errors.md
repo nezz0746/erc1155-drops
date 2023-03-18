@@ -1,8 +1,9 @@
 # Errors
+
 [Git Source](https://github.com/nezz0746/lil-erc1155-drop/blob/98e5a922cf56496b4de02d4782b187dd6d1c6131/src/libs/Errors.sol)
 
-
 ## Errors
+
 ### DropIsNotLive
 
 ```solidity
@@ -15,10 +16,10 @@ error DropIsNotLive();
 error DropTypeNotSupported();
 ```
 
-### minterNotAllowed
+### MinterNotAllowed
 
 ```solidity
-error minterNotAllowed();
+error MinterNotAllowed();
 ```
 
 ### SenderDoesnNotOwnERC721
@@ -62,4 +63,3 @@ error AlreadyClaimed();
 ```solidity
 error NotSender();
 ```
-

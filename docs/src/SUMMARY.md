@@ -2,7 +2,7 @@
 - [Home](README.md)
 # src
   - [❱ libs](src/libs/README.md)
-    - [Errors](src/libs/Errors.sol/contract.Errors.md)
+    - [IERC1155Drop](src/libs/IERC1155Drop.sol/interface.IERC1155Drop.md)
     - [DropType](src/libs/Structs.sol/enum.DropType.md)
     - [Drop](src/libs/Structs.sol/struct.Drop.md)
     - [PublicDropSettings](src/libs/Structs.sol/struct.PublicDropSettings.md)

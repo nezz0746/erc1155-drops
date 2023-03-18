@@ -1,8 +1,8 @@
 # ERC1155Drop
-[Git Source](https://github.com/nezz0746/lil-erc1155-drop/blob/98e5a922cf56496b4de02d4782b187dd6d1c6131/src/ERC1155Drop.sol)
+[Git Source](https://github.com/nezz0746/erc1155-drops/blob/d7f880b61660eee2cfba35343e42e0de1e47c5a1/src/ERC1155Drop.sol)
 
 **Inherits:**
-ERC1155Supply, Ownable, AccessControl
+[IERC1155Drop](/src/libs/IERC1155Drop.sol/interface.IERC1155Drop.md), ERC1155Supply, Ownable, AccessControl
 
 **Author:**
 nezzar.eth
@@ -14,6 +14,13 @@ in the future.
 
 
 ## State Variables
+### DROP_CREATOR
+
+```solidity
+bytes32 public constant DROP_CREATOR = keccak256("DROP_CREATOR");
+```
+
+
 ### _dropIds
 Counter for dropIds
 
@@ -41,10 +48,12 @@ mapping(uint256 dropId => mapping(address account => bool claimed) dropClaims) p
 ```
 
 
-### DROP_CREATOR
+### treasury
+address of the treasury
+
 
 ```solidity
-bytes32 public constant DROP_CREATOR = keccak256("DROP_CREATOR");
+address payable public treasury;
 ```
 
 
@@ -57,7 +66,7 @@ See {ERC1155}.*
 
 
 ```solidity
-constructor(address _admin) ERC1155("");
+constructor(address _admin, address payable _treasury) ERC1155("");
 ```
 
 ### onlyValidMinter
@@ -202,36 +211,5 @@ function uri(uint256 _id) public view virtual override returns (string memory);
 
 ```solidity
 function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool);
-```
-
-## Events
-### CreateDrop
-
-```solidity
-event CreateDrop(uint256 indexed dropId, DropType indexed dropType, bytes dropData, string dropUri);
-```
-
-### UpdateDropUri
-
-```solidity
-event UpdateDropUri(uint256 indexed dropId, string dropUri);
-```
-
-### PauseDrop
-
-```solidity
-event PauseDrop(uint256 indexed dropId);
-```
-
-### UnpauseDrop
-
-```solidity
-event UnpauseDrop(uint256 indexed dropId);
-```
-
-### MintDrop
-
-```solidity
-event MintDrop(uint256 indexed dropId, address indexed to, bytes mintData);
 ```
 

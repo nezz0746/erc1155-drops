@@ -1,7 +1,7 @@
 
 
 # Contents
-- [Errors](Errors.sol/contract.Errors.md)
+- [IERC1155Drop](IERC1155Drop.sol/interface.IERC1155Drop.md)
 - [DropType](Structs.sol/enum.DropType.md)
 - [Drop](Structs.sol/struct.Drop.md)
 - [PublicDropSettings](Structs.sol/struct.PublicDropSettings.md)
