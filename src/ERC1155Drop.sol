@@ -8,7 +8,7 @@ import { IERC721 } from "@openzeppelin-contracts/token/ERC721/IERC721.sol";
 import { Ownable } from "@openzeppelin-contracts/access/Ownable.sol";
 import { AccessControl } from "@openzeppelin-contracts/access/AccessControl.sol";
 import "src/libs/Structs.sol";
-import { Errors } from "src/libs/Errors.sol";
+import { IERC1155Drop } from "src/libs/IERC1155Drop.sol";
 
 /**
  * @title ERC1155Drop
@@ -19,14 +19,10 @@ import { Errors } from "src/libs/Errors.sol";
  * each token created. Could be made upgradable to allow for more mint strategies
  * in the future.
  */
-contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
+contract ERC1155Drop is IERC1155Drop, ERC1155Supply, Ownable, AccessControl {
     using Counters for Counters.Counter;
 
-    event CreateDrop(uint256 indexed dropId, DropType indexed dropType, bytes dropData, string dropUri);
-    event UpdateDropUri(uint256 indexed dropId, string dropUri);
-    event PauseDrop(uint256 indexed dropId);
-    event UnpauseDrop(uint256 indexed dropId);
-    event MintDrop(uint256 indexed dropId, address indexed to, bytes mintData);
+    bytes32 public constant DROP_CREATOR = keccak256("DROP_CREATOR");
 
     /**
      * @notice Counter for dropIds
@@ -43,8 +39,9 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
      */
     mapping(uint256 dropId => mapping(address account => bool claimed) dropClaims) public dropsClaims;
 
-    bytes32 public constant DROP_CREATOR = keccak256("DROP_CREATOR");
-
+    /**
+     * @notice address of the treasury
+     */
     address payable public treasury;
 
     /**
@@ -67,7 +64,7 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
     /// @notice require that mint callers be non-contract owners
     modifier onlyValidMinter() {
-        if (tx.origin != msg.sender) revert Errors.minterNotAllowed();
+        if (tx.origin != msg.sender) revert MinterNotAllowed();
         _;
     }
 
@@ -107,7 +104,7 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
             emit UpdateDropUri(dropId, _dropUri);
         } else {
-            revert Errors.DropIsNotLive();
+            revert DropIsNotLive();
         }
     }
 
@@ -140,7 +137,7 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
     function mint(uint256 dropId, DropType dropType, bytes calldata mintData) external payable onlyValidMinter {
         Drop memory drop = drops[dropId];
 
-        if (drop.isLive == false) revert Errors.DropIsNotLive();
+        if (drop.isLive == false) revert DropIsNotLive();
 
         if (dropType == DropType.TokenGated) {
             _mintERC721GatedDrop(dropId, drop.dropData, mintData);
@@ -152,7 +149,11 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
             _mintAllowlistDrop(dropId, drop.dropData, mintData);
             emit MintDrop(dropId, msg.sender, mintData);
         } else {
-            revert Errors.DropTypeNotSupported();
+            revert DropTypeNotSupported();
+        }
+
+        if (msg.value > 0) {
+            treasury.transfer(msg.value);
         }
     }
 
@@ -168,26 +169,24 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
         ERC721GatedDropSettings memory dropSettings = abi.decode(dropData, (ERC721GatedDropSettings));
 
         if (msg.value < mintSettings.amount * dropSettings.price) {
-            revert Errors.IncorrectAmountSent();
+            revert IncorrectAmountSent();
         }
 
-        if (mintSettings.to != msg.sender) revert Errors.NotSender();
+        if (mintSettings.to != msg.sender) revert NotSender();
 
         if (totalSupply(dropId) + mintSettings.amount > dropSettings.maxSupply) {
-            revert Errors.MaxSupplyReached();
+            revert MaxSupplyReached();
         }
 
         if (balanceOf(mintSettings.to, dropId) + mintSettings.amount > dropSettings.maxPerWallet) {
-            revert Errors.MaxPerWalletReached();
+            revert MaxPerWalletReached();
         }
 
         if (IERC721(dropSettings.tokenAddress).balanceOf(mintSettings.to) == 0) {
-            revert Errors.SenderDoesnNotOwnERC721();
+            revert SenderDoesnNotOwnERC721();
         }
 
         _mint(mintSettings.to, dropId, mintSettings.amount, "");
-
-        treasury.transfer(msg.value);
     }
 
     /**
@@ -201,18 +200,18 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
         PublicDropSettings memory dropSettings = abi.decode(dropData, (PublicDropSettings));
 
-        if (mintSettings.to != msg.sender) revert Errors.NotSender();
+        if (mintSettings.to != msg.sender) revert NotSender();
 
         if (totalSupply(dropId) + mintSettings.amount > dropSettings.maxSupply) {
-            revert Errors.MaxSupplyReached();
+            revert MaxSupplyReached();
         }
 
         if (balanceOf(mintSettings.to, dropId) + mintSettings.amount > dropSettings.maxPerWallet) {
-            revert Errors.MaxPerWalletReached();
+            revert MaxPerWalletReached();
         }
 
         if (msg.value < mintSettings.amount * dropSettings.price) {
-            revert Errors.IncorrectAmountSent();
+            revert IncorrectAmountSent();
         }
 
         _mint(mintSettings.to, dropId, mintSettings.amount, "");
@@ -229,17 +228,17 @@ contract ERC1155Drop is ERC1155Supply, Ownable, AccessControl {
 
         AllowlistDropSettings memory dropSettings = abi.decode(dropData, (AllowlistDropSettings));
 
-        if (account != msg.sender) revert Errors.NotSender();
+        if (account != msg.sender) revert NotSender();
 
         if (
             MerkleProof.verify(proof, dropSettings.listMerkleRoot, keccak256(abi.encodePacked(account, amount))) ==
             false
-        ) revert Errors.NotInAllowlist();
+        ) revert NotInAllowlist();
 
-        if (dropsClaims[dropId][account]) revert Errors.AlreadyClaimed();
+        if (dropsClaims[dropId][account]) revert AlreadyClaimed();
 
         if (msg.value > amount * dropSettings.price) {
-            revert Errors.IncorrectAmountSent();
+            revert IncorrectAmountSent();
         }
 
         _mint(account, dropId, amount, "");

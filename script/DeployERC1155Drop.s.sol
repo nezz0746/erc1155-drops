@@ -11,7 +11,7 @@ contract DeployERC1155Drop is Script {
 
         address admin = msg.sender;
 
-        ERC1155Drop drops = new ERC1155Drop(admin);
+        ERC1155Drop drops = new ERC1155Drop(admin, payable(admin));
 
         drops.createDrop(
             DropType.Public,

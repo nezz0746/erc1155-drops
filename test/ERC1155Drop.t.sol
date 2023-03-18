@@ -5,8 +5,8 @@ import { Merkle } from "@murky/Merkle.sol";
 import { ERC721 } from "@openzeppelin-contracts/token/ERC721/ERC721.sol";
 import { DSTestFull } from "./DSTestFull.sol";
 import { ERC1155Drop } from "src/ERC1155Drop.sol";
+import { IERC1155Drop } from "src/libs/IERC1155Drop.sol";
 import { DropType } from "src/libs/Structs.sol";
-import { Errors } from "src/libs/Errors.sol";
 
 contract MockERC721 is ERC721 {
     constructor() ERC721("MockERC721", "M721") {}
@@ -16,8 +16,9 @@ contract MockERC721 is ERC721 {
     }
 }
 
-contract ERC1155DropTests is DSTestFull {
+contract ERC1155DropTests is DSTestFull, IERC1155Drop {
     address admin;
+    address payable treasury;
 
     address listed1;
     address listed2;
@@ -32,8 +33,9 @@ contract ERC1155DropTests is DSTestFull {
 
     function setUp() public virtual {
         admin = msg.sender;
+        treasury = payable(admin);
 
-        drops = new ERC1155Drop(admin);
+        drops = new ERC1155Drop(admin, treasury);
 
         listed1 = label("listed1");
         listed2 = label("listed2");
@@ -94,14 +96,14 @@ contract Unit_ERC1155Drops_MintPublic is ERC1155DropTests {
 
     function testCannotMintWhenPriceNotMet() public {
         address minter = labelAndPrank("minter");
-        vm.expectRevert(Errors.IncorrectAmountSent.selector);
+        vm.expectRevert(IncorrectAmountSent.selector);
         drops.mint{ value: 0.001 ether }(1, DropType.Public, abi.encode(1, minter));
     }
 
     function testCannotMintOverMaxPerWallet() public {
         uint256 amount = 11;
         address minter = labelAndPrank("minter");
-        vm.expectRevert(Errors.MaxPerWalletReached.selector);
+        vm.expectRevert(MaxPerWalletReached.selector);
         drops.mint{ value: 0.1 ether * amount }(1, DropType.Public, abi.encode(amount, minter));
     }
 
@@ -116,7 +118,7 @@ contract Unit_ERC1155Drops_MintPublic is ERC1155DropTests {
         }
 
         address lastMinter = labelAndPrank("minter");
-        vm.expectRevert(Errors.MaxSupplyReached.selector);
+        vm.expectRevert(MaxSupplyReached.selector);
         drops.mint{ value: publicMintPrice }(1, DropType.Public, abi.encode(1, lastMinter));
     }
 }
@@ -158,7 +160,7 @@ contract Unit_ERC1155Drops_MintAllowList is ERC1155DropTests {
     function testOnlyAccountCanClaim() public {
         vm.startPrank(admin);
         bytes32[] memory proof = m.getProof(data, 1);
-        vm.expectRevert(Errors.NotSender.selector);
+        vm.expectRevert(NotSender.selector);
         drops.mint(3, DropType.Allowlist, abi.encode(1, listed1, proof));
         vm.stopPrank();
     }
@@ -167,7 +169,7 @@ contract Unit_ERC1155Drops_MintAllowList is ERC1155DropTests {
         vm.startPrank(admin);
         bytes32[] memory proof = m.getProof(data, 0);
         drops.mint(3, DropType.Allowlist, abi.encode(1, admin, proof));
-        vm.expectRevert(Errors.AlreadyClaimed.selector);
+        vm.expectRevert(AlreadyClaimed.selector);
         drops.mint(3, DropType.Allowlist, abi.encode(1, admin, proof));
         vm.stopPrank();
     }
